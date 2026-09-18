@@ -1,0 +1,12 @@
+.gradle/
+local.properties
+# Android/Gradle build outputs must be produced locally or by CI, never committed.
+/build/
+**/build/
+*.apk
+*.aab
+
+# The binary wrapper JAR is generated from the pinned Gradle version in CI.
+gradle/wrapper/gradle-wrapper.jar
+.idea/
+*.iml
