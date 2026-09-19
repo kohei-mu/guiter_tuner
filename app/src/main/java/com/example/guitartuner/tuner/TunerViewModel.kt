@@ -16,12 +16,14 @@ class TunerViewModel : ViewModel() {
     private val recorder = AudioRecorder()
     private val pitchDetector = YinPitchDetector()
     private val smoother = PitchSmoother()
+    private val signalActivityDetector = SignalActivityDetector()
     private val _state = MutableStateFlow(TunerState())
     val state: StateFlow<TunerState> = _state.asStateFlow()
     private var recordingJob: Job? = null
 
     fun selectString(string: GuitarString) {
         smoother.reset()
+        signalActivityDetector.reset()
         _state.value = TunerState(
             selectedString = string,
             status = TuningStatus.WAITING,
@@ -49,6 +51,7 @@ class TunerViewModel : ViewModel() {
         recorder.stop()
         recordingJob?.cancel()
         recordingJob = null
+        signalActivityDetector.reset()
         val selected = _state.value.selectedString
         _state.value = _state.value.copy(
             detectedFrequencyHz = null,
