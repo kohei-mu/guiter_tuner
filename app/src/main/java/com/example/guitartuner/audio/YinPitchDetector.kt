@@ -4,11 +4,17 @@ import kotlin.math.abs
 
 class YinPitchDetector(
     private val threshold: Double = DEFAULT_THRESHOLD,
-    private val minimumFrequency: Double = MIN_FREQUENCY_HZ,
-    private val maximumFrequency: Double = MAX_FREQUENCY_HZ,
 ) : PitchDetector {
-    override fun detect(samples: ShortArray, sampleRate: Int): Double? {
-        if (samples.size < 4 || sampleRate <= 0) return null
+    override fun detect(
+        samples: ShortArray,
+        sampleRate: Int,
+        minimumFrequency: Double,
+        maximumFrequency: Double,
+    ): Double? {
+        if (
+            samples.size < 4 || sampleRate <= 0 ||
+            minimumFrequency <= 0.0 || maximumFrequency <= minimumFrequency
+        ) return null
 
         val minTau = (sampleRate / maximumFrequency).toInt().coerceAtLeast(2)
         val maxTau = (sampleRate / minimumFrequency).toInt()
@@ -63,7 +69,5 @@ class YinPitchDetector(
 
     companion object {
         const val DEFAULT_THRESHOLD = 0.15
-        const val MIN_FREQUENCY_HZ = 60.0
-        const val MAX_FREQUENCY_HZ = 400.0
     }
 }
