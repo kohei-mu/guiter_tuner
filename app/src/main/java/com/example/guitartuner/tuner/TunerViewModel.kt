@@ -3,6 +3,8 @@ package com.example.guitartuner.tuner
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.guitartuner.audio.AudioRecorder
+import com.example.guitartuner.audio.PitchCandidateResolver
+import com.example.guitartuner.audio.PitchDetectionRange
 import com.example.guitartuner.audio.PitchSmoother
 import com.example.guitartuner.audio.SignalActivityDetector
 import com.example.guitartuner.audio.YinPitchDetector
@@ -16,14 +18,17 @@ class TunerViewModel : ViewModel() {
     private val recorder = AudioRecorder()
     private val pitchDetector = YinPitchDetector()
     private val smoother = PitchSmoother()
+    private val candidateResolver = PitchCandidateResolver()
     private val signalActivityDetector = SignalActivityDetector()
     private val _state = MutableStateFlow(TunerState())
     val state: StateFlow<TunerState> = _state.asStateFlow()
     private var recordingJob: Job? = null
+    private var consecutivePitchFailures = 0
 
     fun selectString(string: GuitarString) {
         smoother.reset()
         signalActivityDetector.reset()
+        consecutivePitchFailures = 0
         _state.value = TunerState(
             selectedString = string,
             status = TuningStatus.WAITING,
@@ -52,6 +57,7 @@ class TunerViewModel : ViewModel() {
         recordingJob?.cancel()
         recordingJob = null
         signalActivityDetector.reset()
+        consecutivePitchFailures = 0
         val selected = _state.value.selectedString
         _state.value = _state.value.copy(
             detectedFrequencyHz = null,
@@ -63,6 +69,7 @@ class TunerViewModel : ViewModel() {
     private fun processSamples(samples: ShortArray) {
         val selected = _state.value.selectedString ?: return
         if (!signalActivityDetector.isActive(samples)) {
+            consecutivePitchFailures = 0
             _state.value = _state.value.copy(
                 detectedFrequencyHz = null,
                 cents = null,
@@ -71,12 +78,23 @@ class TunerViewModel : ViewModel() {
             )
             return
         }
-        val detected = pitchDetector.detect(samples, AudioRecorder.SAMPLE_RATE)
+        val range = PitchDetectionRange.forTarget(selected.frequencyHz)
+        val detected = pitchDetector.detect(
+            samples,
+            AudioRecorder.SAMPLE_RATE,
+            range.minimumFrequency,
+            range.maximumFrequency,
+        )
         if (detected == null) {
-            _state.value = _state.value.copy(status = TuningStatus.DETECTING)
+            consecutivePitchFailures++
+            if (consecutivePitchFailures > MAX_TRANSIENT_PITCH_FAILURES || _state.value.cents == null) {
+                _state.value = _state.value.copy(status = TuningStatus.DETECTING)
+            }
             return
         }
-        val analyzed = TuningAnalyzer.analyze(selected, smoother.add(detected))
+        consecutivePitchFailures = 0
+        val resolved = candidateResolver.resolve(detected, selected.frequencyHz)
+        val analyzed = TuningAnalyzer.analyze(selected, smoother.add(resolved))
         _state.value = analyzed.copy(
             meterCents = if (analyzed.isOutOfRange) _state.value.meterCents else analyzed.meterCents,
             hasMicrophonePermission = _state.value.hasMicrophonePermission,
@@ -87,5 +105,9 @@ class TunerViewModel : ViewModel() {
     override fun onCleared() {
         recorder.stop()
         super.onCleared()
+    }
+
+    private companion object {
+        const val MAX_TRANSIENT_PITCH_FAILURES = 2
     }
 }

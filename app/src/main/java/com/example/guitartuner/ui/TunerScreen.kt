@@ -119,15 +119,15 @@ private fun TuningPanel(state: TunerState) {
         Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Text("${string.number}弦", style = MaterialTheme.typography.titleMedium)
             Text(string.note, fontSize = 64.sp, fontWeight = FontWeight.Bold)
-            Text(message, color = statusColor, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.height(20.dp))
+            Text(message, color = statusColor, fontSize = 32.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(16.dp))
+            TuningMeter(state.meterCents, update = state.cents != null && !state.isOutOfRange)
+            Spacer(Modifier.height(24.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                 ValueLabel("検出", state.detectedFrequencyHz?.let { formatHz(it) } ?: "-- Hz")
                 ValueLabel("基準", formatHz(string.frequencyHz))
                 ValueLabel("ずれ", state.cents?.let { String.format(Locale.US, "%+.1f ¢", it) } ?: "-- ¢")
             }
-            Spacer(Modifier.height(28.dp))
-            TuningMeter(state.meterCents, update = state.cents != null && !state.isOutOfRange)
         }
     }
 }
@@ -144,7 +144,7 @@ private fun ValueLabel(label: String, value: String) {
 private fun TuningMeter(cents: Float, update: Boolean) {
     val needleColor = MaterialTheme.colorScheme.primary
     Column(Modifier.fillMaxWidth()) {
-        Canvas(Modifier.fillMaxWidth().height(70.dp)) {
+        Canvas(Modifier.fillMaxWidth().height(100.dp)) {
             val centerY = size.height * 0.62f
             drawLine(Color(0xFF9CA0AC), Offset(0f, centerY), Offset(size.width, centerY), 5f, StrokeCap.Round)
             for (mark in -5..5) {
@@ -159,7 +159,8 @@ private fun TuningMeter(cents: Float, update: Boolean) {
             }
             if (update) {
                 val x = size.width * ((cents.coerceIn(-50f, 50f) + 50f) / 100f)
-                drawCircle(needleColor, 12f, Offset(x, centerY - 33f))
+                drawLine(needleColor, Offset(x, centerY - 42f), Offset(x, centerY + 30f), 8f, StrokeCap.Round)
+                drawCircle(needleColor, 14f, Offset(x, centerY - 42f))
             }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {

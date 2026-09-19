@@ -2,6 +2,7 @@ package com.example.guitartuner.tuner
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import kotlin.math.pow
 
 class TuningAnalyzerTest {
     private val aString = GuitarTuning.standard.first { it.number == 5 }
@@ -32,4 +33,26 @@ class TuningAnalyzerTest {
         assertEquals(5, result.selectedString?.number)
         assertEquals(true, result.isOutOfRange)
     }
+
+    @Test fun `in-tune status includes exact five cent boundaries`() {
+        assertEquals(TuningStatus.IN_TUNE, analyzeAtCents(-5.0).status)
+        assertEquals(TuningStatus.IN_TUNE, analyzeAtCents(5.0).status)
+    }
+
+    @Test fun `values just beyond five cents are low or high`() {
+        assertEquals(TuningStatus.LOW, analyzeAtCents(-5.1).status)
+        assertEquals(TuningStatus.HIGH, analyzeAtCents(5.1).status)
+    }
+
+    @Test fun `three hundred cents is relevant but values beyond it are not`() {
+        assertEquals(false, analyzeAtCents(300.0).isOutOfRange)
+        assertEquals(false, analyzeAtCents(-300.0).isOutOfRange)
+        assertEquals(true, analyzeAtCents(300.1).isOutOfRange)
+        assertEquals(true, analyzeAtCents(-300.1).isOutOfRange)
+    }
+
+    private fun analyzeAtCents(cents: Double) = TuningAnalyzer.analyze(
+        aString,
+        aString.frequencyHz * 2.0.pow(cents / 1200.0),
+    )
 }

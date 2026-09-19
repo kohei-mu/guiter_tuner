@@ -42,6 +42,8 @@ class SignalActivityDetector(
     companion object {
         // The YIN confidence check rejects unpitched noise; this gate should reject only silence.
         const val MIN_RMS = 10.0
+        // 4,096 samples / 44,100 Hz is about 93 ms per buffer; 8 buffers is a
+        // roughly 740 ms release, long enough to bridge the decay of a plucked string.
         const val RELEASE_BUFFERS = 8
     }
 }

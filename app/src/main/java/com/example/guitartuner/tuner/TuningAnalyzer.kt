@@ -11,7 +11,7 @@ object TuningAnalyzer {
 
     fun analyze(selectedString: GuitarString, detectedFrequency: Double): TunerState {
         val cents = cents(detectedFrequency, selectedString.frequencyHz)
-        if (kotlin.math.abs(cents) > MAX_RELEVANT_CENTS) {
+        if (kotlin.math.abs(cents) > MAX_RELEVANT_CENTS + BOUNDARY_EPSILON) {
             return TunerState(
                 selectedString = selectedString,
                 detectedFrequencyHz = detectedFrequency,
@@ -20,8 +20,8 @@ object TuningAnalyzer {
             )
         }
         val status = when {
-            cents < -IN_TUNE_CENTS -> TuningStatus.LOW
-            cents > IN_TUNE_CENTS -> TuningStatus.HIGH
+            cents < -IN_TUNE_CENTS - BOUNDARY_EPSILON -> TuningStatus.LOW
+            cents > IN_TUNE_CENTS + BOUNDARY_EPSILON -> TuningStatus.HIGH
             else -> TuningStatus.IN_TUNE
         }
         return TunerState(
@@ -32,4 +32,6 @@ object TuningAnalyzer {
             status = status,
         )
     }
+
+    private const val BOUNDARY_EPSILON = 1e-9
 }
