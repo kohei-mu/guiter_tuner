@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.guitartuner.audio.AudioRecorder
 import com.example.guitartuner.audio.PitchSmoother
-import com.example.guitartuner.audio.SignalActivityDetector
+import com.example.guitartuner.audio.SignalLevel
 import com.example.guitartuner.audio.YinPitchDetector
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -62,7 +62,7 @@ class TunerViewModel : ViewModel() {
 
     private fun processSamples(samples: ShortArray) {
         val selected = _state.value.selectedString ?: return
-        if (!signalActivityDetector.isActive(samples)) {
+        if (!SignalLevel.isAudible(samples)) {
             _state.value = _state.value.copy(
                 detectedFrequencyHz = null,
                 cents = null,
