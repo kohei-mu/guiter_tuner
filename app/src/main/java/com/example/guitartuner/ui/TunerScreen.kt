@@ -2,6 +2,7 @@ package com.example.guitartuner.ui
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,6 +15,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -38,35 +40,51 @@ import java.util.Locale
 fun TunerScreen(
     state: TunerState,
     onStringSelected: (GuitarString) -> Unit,
+    onReset: () -> Unit,
     onRequestPermission: () -> Unit,
     onOpenSettings: () -> Unit,
 ) {
     Surface(Modifier.fillMaxSize()) {
         Column(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 24.dp),
+            modifier = Modifier.fillMaxSize().padding(start = 20.dp, top = 48.dp, end = 20.dp, bottom = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text("Guitar Tuner", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
             Text("Standard tuning · A4 = 440 Hz", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(Modifier.height(26.dp))
+            Spacer(Modifier.height(22.dp))
 
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 GuitarTuning.standard.forEach { string ->
+                    val isTuned = string in state.tunedStrings
                     FilterChip(
                         selected = state.selectedString == string,
                         onClick = { onStringSelected(string) },
                         label = { Text("${string.number}:${string.note.first()}") },
+                        colors = FilterChipDefaults.filterChipColors(
+                            containerColor = if (isTuned) Color(0xFFD7F5E2) else Color.Transparent,
+                            labelColor = if (isTuned) Color(0xFF126B3A) else MaterialTheme.colorScheme.onSurfaceVariant,
+                            selectedContainerColor = if (isTuned) Color(0xFFBDECCF) else MaterialTheme.colorScheme.secondaryContainer,
+                            selectedLabelColor = if (isTuned) Color(0xFF0B5D31) else MaterialTheme.colorScheme.onSecondaryContainer,
+                        ),
                     )
                 }
             }
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(8.dp))
+            OutlinedButton(onClick = onReset, enabled = state.tunedStrings.isNotEmpty()) {
+                Text("リセット")
+            }
 
-            if (!state.hasMicrophonePermission) {
-                PermissionCard(state.permissionDenied, onRequestPermission, onOpenSettings)
-            } else if (state.selectedString == null) {
-                MessageCard("チューニングする弦を選択してください")
-            } else {
-                TuningPanel(state)
+            Box(
+                modifier = Modifier.fillMaxWidth().weight(1f),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (!state.hasMicrophonePermission) {
+                    PermissionCard(state.permissionDenied, onRequestPermission, onOpenSettings)
+                } else if (state.selectedString == null) {
+                    MessageCard("チューニングする弦を選択してください")
+                } else {
+                    TuningPanel(state)
+                }
             }
         }
     }
@@ -119,7 +137,12 @@ private fun TuningPanel(state: TunerState) {
         Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Text("${string.number}弦", style = MaterialTheme.typography.titleMedium)
             Text(string.note, fontSize = 64.sp, fontWeight = FontWeight.Bold)
-            Text(message, color = statusColor, fontSize = 32.sp, fontWeight = FontWeight.Bold)
+            Text(
+                message,
+                color = statusColor,
+                fontSize = if (state.status == TuningStatus.DETECTING) 20.sp else 32.sp,
+                fontWeight = FontWeight.Bold,
+            )
             Spacer(Modifier.height(16.dp))
             TuningMeter(state.meterCents, update = state.cents != null && !state.isOutOfRange)
             Spacer(Modifier.height(24.dp))
