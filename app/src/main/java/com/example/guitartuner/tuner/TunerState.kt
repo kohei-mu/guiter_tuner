@@ -11,4 +11,5 @@ data class TunerState(
     val isOutOfRange: Boolean = false,
     val hasMicrophonePermission: Boolean = false,
     val permissionDenied: Boolean = false,
+    val tunedStrings: Set<GuitarString> = emptySet(),
 )

@@ -57,6 +57,7 @@ class MainActivity : ComponentActivity() {
                 TunerScreen(
                     state = state,
                     onStringSelected = tunerViewModel::selectString,
+                    onReset = tunerViewModel::resetTuning,
                     onRequestPermission = { permissionLauncher.launch(Manifest.permission.RECORD_AUDIO) },
                     onOpenSettings = {
                         startActivity(

@@ -34,6 +34,26 @@ class TunerViewModel : ViewModel() {
             status = TuningStatus.WAITING,
             hasMicrophonePermission = _state.value.hasMicrophonePermission,
             permissionDenied = _state.value.permissionDenied,
+            tunedStrings = _state.value.tunedStrings,
+        )
+    }
+
+    fun resetTuning() {
+        smoother.reset()
+        signalActivityDetector.reset()
+        consecutivePitchFailures = 0
+        val current = _state.value
+        _state.value = current.copy(
+            detectedFrequencyHz = null,
+            cents = null,
+            meterCents = 0f,
+            status = if (current.selectedString == null) {
+                TuningStatus.NO_STRING_SELECTED
+            } else {
+                TuningStatus.WAITING
+            },
+            isOutOfRange = false,
+            tunedStrings = emptySet(),
         )
     }
 
@@ -95,10 +115,16 @@ class TunerViewModel : ViewModel() {
         consecutivePitchFailures = 0
         val resolved = candidateResolver.resolve(detected, selected.frequencyHz)
         val analyzed = TuningAnalyzer.analyze(selected, smoother.add(resolved))
+        val tunedStrings = if (analyzed.status == TuningStatus.IN_TUNE) {
+            _state.value.tunedStrings + selected
+        } else {
+            _state.value.tunedStrings
+        }
         _state.value = analyzed.copy(
             meterCents = if (analyzed.isOutOfRange) _state.value.meterCents else analyzed.meterCents,
             hasMicrophonePermission = _state.value.hasMicrophonePermission,
             permissionDenied = _state.value.permissionDenied,
+            tunedStrings = tunedStrings,
         )
     }
 
